@@ -1,0 +1,12 @@
+﻿namespace PizzaToPizza.Models
+{
+    public class Order
+    {
+        public int Id { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public int UserId { get; set; }
+        public User User { get; set; } = null!;
+        public ICollection<Pizza> Pizzas { get; set; } = new List<Pizza>();
+        public decimal TotalPrice { get; set; }
+    }
+}
