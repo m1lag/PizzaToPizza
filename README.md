@@ -123,10 +123,16 @@ POST /api/promocodes      (Admin)
 
 ## 🗄 Database
 
-**Database Engine:** PostgreSQL  
+**Provider:** Neon  
+**Engine:** PostgreSQL  
 **ORM:** Entity Framework Core
 
-### Seed Data Included
+### Features
+
+- Cloud hosted database
+- Remote connection via connection string
+- EF Core migrations support
+- Seed data included
 
 - Categories
 - Pizza menu
