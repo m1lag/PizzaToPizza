@@ -134,9 +134,6 @@ POST /api/promocodes      (Admin)
 - EF Core migrations support
 - Seed data included
 
-- Categories
-- Pizza menu
-
 ---
 
 ## 🚀 Running the Project
