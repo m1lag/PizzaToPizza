@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PizzaToPizza.Data;
-using PizzaToPizza.Models;
+using PizzaToPizza.Dtos;
+using PizzaToPizza.Services;
 
 namespace PizzaToPizza.Controllers
 {
@@ -9,52 +8,56 @@ namespace PizzaToPizza.Controllers
     [Route("api/[controller]")]
     public class PromoCodesController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IPromoCodeService _service;
 
-        public PromoCodesController(AppDbContext context)
+        public PromoCodesController(IPromoCodeService service)
         {
-            _context = context;
+            _service = service;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var promoCodes = await _context.PromoCodes.ToListAsync();
-            return Ok(promoCodes);
+            return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var promoCode = await _context.PromoCodes.FindAsync(id);
-            if (promoCode == null) return NotFound();
-            return Ok(promoCode);
+            var promo = await _service.GetByIdAsync(id);
+
+            if (promo == null)
+                return NotFound();
+
+            return Ok(promo);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(PromoCode promoCode)
+        public async Task<IActionResult> Create(CreatePromoCodeDto dto)
         {
-            _context.PromoCodes.Add(promoCode);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = promoCode.Id }, promoCode);
+            var promo = await _service.CreateAsync(dto);
+            return Ok(promo);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, PromoCode promoCode)
+        public async Task<IActionResult> Update(int id, UpdatePromoCodeDto dto)
         {
-            if (id != promoCode.Id) return BadRequest();
-            _context.Entry(promoCode).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            var updated = await _service.UpdateAsync(id, dto);
+
+            if (!updated)
+                return NotFound();
+
             return NoContent();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var promoCode = await _context.PromoCodes.FindAsync(id);
-            if (promoCode == null) return NotFound();
-            _context.PromoCodes.Remove(promoCode);
-            await _context.SaveChangesAsync();
+            var deleted = await _service.DeleteAsync(id);
+
+            if (!deleted)
+                return NotFound();
+
             return NoContent();
         }
     }

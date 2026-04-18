@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PizzaToPizza.Data;
-using PizzaToPizza.Models;
+using PizzaToPizza.Dtos;
+using PizzaToPizza.Services;
 
 namespace PizzaToPizza.Controllers
 {
@@ -9,52 +8,56 @@ namespace PizzaToPizza.Controllers
     [Route("api/[controller]")]
     public class CategoriesController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly ICategoryService _service;
 
-        public CategoriesController(AppDbContext context)
+        public CategoriesController(ICategoryService service)
         {
-            _context = context;
+            _service = service;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var categories = await _context.Categories.ToListAsync();
-            return Ok(categories);
+            return Ok(await _service.GetAllAsync());
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var category = await _context.Categories.FindAsync(id);
-            if (category == null) return NotFound();
+            var category = await _service.GetByIdAsync(id);
+
+            if (category == null)
+                return NotFound();
+
             return Ok(category);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Category category)
+        public async Task<IActionResult> Create(CreateCategoryDto dto)
         {
-            _context.Categories.Add(category);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = category.Id }, category);
+            var category = await _service.CreateAsync(dto);
+            return Ok(category);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Category category)
+        public async Task<IActionResult> Update(int id, UpdateCategoryDto dto)
         {
-            if (id != category.Id) return BadRequest();
-            _context.Entry(category).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            var updated = await _service.UpdateAsync(id, dto);
+
+            if (!updated)
+                return NotFound();
+
             return NoContent();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var category = await _context.Categories.FindAsync(id);
-            if (category == null) return NotFound();
-            _context.Categories.Remove(category);
-            await _context.SaveChangesAsync();
+            var deleted = await _service.DeleteAsync(id);
+
+            if (!deleted)
+                return NotFound();
+
             return NoContent();
         }
     }

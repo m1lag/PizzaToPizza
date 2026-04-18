@@ -1,61 +1,83 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PizzaToPizza.Data;
-using PizzaToPizza.Models;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using PizzaToPizza.Dtos;
+using PizzaToPizza.Services;
+using System.Security.Claims;
 
 namespace PizzaToPizza.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class OrdersController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IOrderService _service;
 
-        public OrdersController(AppDbContext context)
+        public OrdersController(IOrderService service)
         {
-            _context = context;
+            _service = service;
         }
 
+        // Только Admin видит все заказы
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var orders = await _context.Orders.Include(o => o.Pizzas).ToListAsync();
-            return Ok(orders);
+            return Ok(await _service.GetAllAsync());
         }
 
+    
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var order = await _context.Orders.Include(o => o.Pizzas)
-                                             .FirstOrDefaultAsync(o => o.Id == id);
-            if (order == null) return NotFound();
+            var order = await _service.GetByIdAsync(id);
+
+            if (order == null)
+                return NotFound();
+
             return Ok(order);
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(Order order)
+        public async Task<IActionResult> Create(CreateOrderDto dto)
         {
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = order.Id }, order);
+            try
+            {
+                var userId = int.Parse(
+                    User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+                var order = await _service.CreateOrderAsync(userId, dto);
+
+                return Ok(order);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, Order order)
+        [HttpGet("my")]
+        public async Task<IActionResult> MyOrders()
         {
-            if (id != order.Id) return BadRequest();
-            _context.Entry(order).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
+            var userId = int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var orders = await _service.GetByUserIdAsync(userId);
+
+            return Ok(orders);
         }
 
+
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var order = await _context.Orders.FindAsync(id);
-            if (order == null) return NotFound();
-            _context.Orders.Remove(order);
-            await _context.SaveChangesAsync();
+            var deleted = await _service.DeleteAsync(id);
+
+            if (!deleted)
+                return NotFound();
+
             return NoContent();
         }
     }
