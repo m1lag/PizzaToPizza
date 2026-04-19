@@ -13,6 +13,8 @@ namespace PizzaToPizza.Dtos
         [Range(0.01, 9999)]
         public decimal Price { get; set; }
 
+        public string Image { get; set; } = "";
+
         [Range(1, int.MaxValue)]
         public int CategoryId { get; set; }
     }

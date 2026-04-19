@@ -24,6 +24,9 @@ namespace PizzaToPizza.Services
                     Name = x.Name,
                     Description = x.Description,
                     Price = x.Price,
+                    RatingAverage = x.RatingAverage,
+                    RatingCount = x.RatingCount,
+                    Image = x.Image,
                     Category = x.Category.Name
                 })
                 .ToListAsync();
@@ -40,6 +43,9 @@ namespace PizzaToPizza.Services
                     Name = x.Name,
                     Description = x.Description,
                     Price = x.Price,
+                    RatingAverage = x.RatingAverage,
+                    RatingCount = x.RatingCount,
+                    Image = x.Image,
                     Category = x.Category.Name
                 })
                 .FirstOrDefaultAsync();
@@ -52,7 +58,11 @@ namespace PizzaToPizza.Services
                 Name = dto.Name,
                 Description = dto.Description,
                 Price = dto.Price,
-                CategoryId = dto.CategoryId
+                Image = dto.Image,
+                CategoryId = dto.CategoryId,
+
+                RatingAverage = 5,
+                RatingCount = 1
             };
 
             _context.Pizzas.Add(pizza);
@@ -80,6 +90,7 @@ namespace PizzaToPizza.Services
             pizza.Name = dto.Name;
             pizza.Description = dto.Description;
             pizza.Price = dto.Price;
+            pizza.Image = dto.Image;
             pizza.CategoryId = dto.CategoryId;
 
             await _context.SaveChangesAsync();
@@ -95,6 +106,47 @@ namespace PizzaToPizza.Services
                 return false;
 
             _context.Pizzas.Remove(pizza);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<bool> RateAsync(int pizzaId, int userId, int stars)
+        {
+            var pizza = await _context.Pizzas.FindAsync(pizzaId);
+
+            if (pizza == null)
+                return false;
+
+            var existing = await _context.PizzaRatings
+                .FirstOrDefaultAsync(x =>
+                    x.PizzaId == pizzaId &&
+                    x.UserId == userId);
+
+            if (existing == null)
+            {
+                _context.PizzaRatings.Add(new PizzaRating
+                {
+                    PizzaId = pizzaId,
+                    UserId = userId,
+                    Stars = stars
+                });
+            }
+            else
+            {
+                existing.Stars = stars;
+            }
+
+            await _context.SaveChangesAsync();
+
+            var ratings = await _context.PizzaRatings
+                .Where(x => x.PizzaId == pizzaId)
+                .ToListAsync();
+
+            pizza.RatingCount = ratings.Count;
+            pizza.RatingAverage =
+    Math.Round(ratings.Average(x => x.Stars), 1);
+
             await _context.SaveChangesAsync();
 
             return true;

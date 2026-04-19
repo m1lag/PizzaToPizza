@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PizzaToPizza.Dtos;
 using PizzaToPizza.Services;
+using System.Security.Claims;
 
 namespace PizzaToPizza.Controllers
 {
@@ -59,6 +61,22 @@ namespace PizzaToPizza.Controllers
                 return NotFound();
 
             return NoContent();
+        }
+
+        [Authorize]
+        [HttpPost("{id}/rate")]
+        public async Task<IActionResult> Rate(int id, RatePizzaDto dto)
+        {
+            var userId = int.Parse(
+                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
+            );
+
+            var result = await _service.RateAsync(id, userId, dto.Stars);
+
+            if (!result)
+                return NotFound();
+
+            return Ok();
         }
     }
 }

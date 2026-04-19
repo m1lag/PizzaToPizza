@@ -59,6 +59,10 @@ namespace PizzaToPizza.Services
 
             return new LoginResponseDto
             {
+                Id = user.Id,
+                Email = user.Email,
+                FullName = user.FullName,
+                Role = user.Role,
                 Token = token
             };
         }
