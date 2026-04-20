@@ -49,7 +49,12 @@ namespace PizzaToPizza.Services
             {
                 Code = dto.Code,
                 DiscountPercent = dto.DiscountPercent,
-                ExpiryDate = dto.ExpiryDate
+                ExpiryDate = dto.ExpiryDate.HasValue
+                    ? DateTime.SpecifyKind(
+                        dto.ExpiryDate.Value,
+                        DateTimeKind.Utc
+                      )
+                    : DateTime.UtcNow.AddDays(14)
             };
 
             _context.PromoCodes.Add(promo);
@@ -92,6 +97,25 @@ namespace PizzaToPizza.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<List<PromoCodeDto>> GetMyAsync(int userId)
+        {
+            return await _context.PromoCodes
+                .Where(x => x.UserId == userId)
+                .Select(x => new PromoCodeDto
+                {
+                    Id = x.Id,
+                    Code = x.Code,
+                    DiscountPercent = x.DiscountPercent,
+                    PizzaName =
+                        x.Pizza != null
+                            ? x.Pizza.Name
+                            : "Універсальний",
+                    IsUsed = x.IsUsed,
+                    ExpiryDate = x.ExpiryDate
+                })
+                .ToListAsync();
         }
     }
 }

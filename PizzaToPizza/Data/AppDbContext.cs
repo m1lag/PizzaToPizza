@@ -18,6 +18,8 @@ namespace PizzaToPizza.Data
 
         public DbSet<PizzaRating> PizzaRatings { get; set; }
 
+        public DbSet<CartItem> CartItems { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

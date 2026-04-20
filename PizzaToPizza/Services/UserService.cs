@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PizzaToPizza.Data;
 using PizzaToPizza.Dtos;
+using PizzaToPizza.Models;
 
 namespace PizzaToPizza.Services
 {
@@ -32,6 +33,18 @@ namespace PizzaToPizza.Services
             };
 
             _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            _context.PromoCodes.Add(new PromoCode
+            {
+                UserId = user.Id,
+                Code = "WELCOME20",
+                DiscountPercent = 20,
+                PizzaId = null,
+                IsUsed = false,
+                ExpiryDate = DateTime.UtcNow.AddDays(14)
+            });
+
             await _context.SaveChangesAsync();
 
             return new UserDto
@@ -78,6 +91,19 @@ namespace PizzaToPizza.Services
                     FullName = x.FullName
                 })
                 .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<UserDto>> GetAllAsync()
+        {
+            return await _context.Users
+                .Select(x => new UserDto
+                {
+                    Id = x.Id,
+                    Email = x.Email,
+                    FullName = x.FullName,
+                    Role = x.Role
+                })
+                .ToListAsync();
         }
     }
 }

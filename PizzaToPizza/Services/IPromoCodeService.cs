@@ -9,5 +9,7 @@ namespace PizzaToPizza.Services
         Task<PromoCodeDto> CreateAsync(CreatePromoCodeDto dto);
         Task<bool> UpdateAsync(int id, UpdatePromoCodeDto dto);
         Task<bool> DeleteAsync(int id);
+
+        Task<List<PromoCodeDto>> GetMyAsync(int userId);
     }
 }

@@ -7,5 +7,7 @@ namespace PizzaToPizza.Services
         Task<UserDto> RegisterAsync(RegisterDto dto);
         Task<LoginResponseDto?> LoginAsync(LoginDto dto);
         Task<UserDto?> GetByIdAsync(int id);
+
+        Task<List<UserDto>> GetAllAsync();
     }
 }
