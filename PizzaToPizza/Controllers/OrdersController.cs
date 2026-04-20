@@ -1,14 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PizzaToPizza.Dtos;
 using PizzaToPizza.Services;
-using System.Security.Claims;
 
 namespace PizzaToPizza.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _service;
@@ -18,67 +16,46 @@ namespace PizzaToPizza.Controllers
             _service = service;
         }
 
-        // Только Admin видит все заказы
-        [Authorize(Roles = "Admin")]
+        private int GetUserId()
+        {
+            return int.Parse(
+                User.FindFirst("sub")!.Value
+            );
+        }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> Create()
+        {
+            await _service.CreateAsync(GetUserId());
+            return Ok();
+        }
+
+        [HttpGet("my")]
+        public async Task<IActionResult> My()
+        {
+            return Ok(
+                await _service.GetMyAsync(GetUserId())
+            );
+        }
+
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> All()
         {
             return Ok(await _service.GetAllAsync());
         }
 
-    
-        [Authorize(Roles = "Admin")]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpPut("{id}/approve")]
+        public async Task<IActionResult> Approve(int id)
         {
-            var order = await _service.GetByIdAsync(id);
-
-            if (order == null)
-                return NotFound();
-
-            return Ok(order);
+            await _service.ApproveAsync(id);
+            return Ok();
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create(CreateOrderDto dto)
+        [HttpPut("{id}/reject")]
+        public async Task<IActionResult> Reject(int id)
         {
-            try
-            {
-                var userId = int.Parse(
-                    User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-
-                var order = await _service.CreateOrderAsync(userId, dto);
-
-                return Ok(order);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpGet("my")]
-        public async Task<IActionResult> MyOrders()
-        {
-            var userId = int.Parse(
-                User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
-
-            var orders = await _service.GetByUserIdAsync(userId);
-
-            return Ok(orders);
-        }
-
-
-        [Authorize(Roles = "Admin")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var deleted = await _service.DeleteAsync(id);
-
-            if (!deleted)
-                return NotFound();
-
-            return NoContent();
+            await _service.RejectAsync(id);
+            return Ok();
         }
     }
 }

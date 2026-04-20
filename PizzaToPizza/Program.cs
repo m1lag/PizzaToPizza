@@ -8,13 +8,17 @@ using PizzaToPizza.Services;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
+
+IdentityModelEventSource.ShowPII = true;
 
 // DB
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+        builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
 // JWT
 builder.Services
@@ -24,6 +28,41 @@ builder.Services
     options.RequireHttpsMetadata = false;
     options.SaveToken = true;
     options.MapInboundClaims = false;
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            Console.WriteLine("METHOD: " + context.Request.Method);
+            Console.WriteLine("AUTH HEADER: " +
+                context.Request.Headers["Authorization"]);
+
+            return Task.CompletedTask;
+        },
+
+        OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine("AUTH FAILED:");
+            Console.WriteLine(context.Exception.ToString());
+            return Task.CompletedTask;
+        },
+
+        OnTokenValidated = context =>
+        {
+            Console.WriteLine("TOKEN OK");
+            foreach (var c in context.Principal.Claims)
+                Console.WriteLine($"{c.Type} = {c.Value}");
+
+            return Task.CompletedTask;
+        },
+
+        OnChallenge = context =>
+        {
+            Console.WriteLine("CHALLENGE TRIGGERED");
+            return Task.CompletedTask;
+        },
+
+    };
 
     options.TokenValidationParameters =
         new TokenValidationParameters

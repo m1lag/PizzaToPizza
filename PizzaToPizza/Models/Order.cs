@@ -3,10 +3,17 @@
     public class Order
     {
         public int Id { get; set; }
-        public DateTime CreatedAt { get; set; }
+
         public int UserId { get; set; }
         public User User { get; set; } = null!;
-        public ICollection<Pizza> Pizzas { get; set; } = new List<Pizza>();
-        public decimal TotalPrice { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public decimal Total { get; set; }
+
+        public string Status { get; set; } = "Pending";
+
+        public List<OrderItem> Items { get; set; }
+            = new();
     }
 }

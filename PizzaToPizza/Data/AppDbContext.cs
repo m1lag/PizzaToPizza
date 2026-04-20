@@ -20,9 +20,36 @@ namespace PizzaToPizza.Data
 
         public DbSet<CartItem> CartItems { get; set; }
 
+        public DbSet<OrderItem> OrderItems { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<User>()
+        .ToTable("Users");
+
+            modelBuilder.Entity<Pizza>()
+                .ToTable("Pizzas");
+
+            modelBuilder.Entity<PizzaRating>()
+                .ToTable("PizzaRatings");
+
+            modelBuilder.Entity<CartItem>()
+                .ToTable("CartItems");
+
+            modelBuilder.Entity<Category>()
+                .ToTable("Categories");
+
+            modelBuilder.Entity<PromoCode>()
+                .ToTable("PromoCodes");
+
+            modelBuilder.Entity<Order>()
+                .ToTable("Orders");
+
+            modelBuilder.Entity<OrderItem>()
+                .ToTable("OrderItems");
 
             modelBuilder.Entity<Category>().HasData(
                 new Category { Id = 1, Name = "Classic" },

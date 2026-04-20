@@ -102,7 +102,11 @@ namespace PizzaToPizza.Services
         public async Task<List<PromoCodeDto>> GetMyAsync(int userId)
         {
             return await _context.PromoCodes
-                .Where(x => x.UserId == userId)
+                .Where(x =>
+                    x.UserId == userId &&
+                    !x.IsUsed &&
+                    x.ExpiryDate > DateTime.UtcNow
+)
                 .Select(x => new PromoCodeDto
                 {
                     Id = x.Id,
@@ -116,6 +120,28 @@ namespace PizzaToPizza.Services
                     ExpiryDate = x.ExpiryDate
                 })
                 .ToListAsync();
+        }
+
+        public async Task<bool> ActivateAsync(
+        int id,
+        int userId)
+        {
+            var promo =
+                await _context.PromoCodes
+                .FirstOrDefaultAsync(x =>
+                    x.Id == id &&
+                    x.UserId == userId &&
+                    !x.IsUsed
+                );
+
+            if (promo == null)
+                return false;
+
+            promo.IsUsed = true;
+
+            await _context.SaveChangesAsync();
+
+            return true;
         }
     }
 }

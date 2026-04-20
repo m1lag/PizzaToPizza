@@ -65,18 +65,32 @@ namespace PizzaToPizza.Controllers
 
         [Authorize]
         [HttpPost("{id}/rate")]
-        public async Task<IActionResult> Rate(int id, RatePizzaDto dto)
+        public async Task<IActionResult> Rate(
+    int id,
+    RatePizzaDto dto)
         {
-            var userId = int.Parse(
-                User.FindFirst(ClaimTypes.NameIdentifier)!.Value
-            );
+            try
+            {
+                var userId = int.Parse(
+                    User.FindFirst("sub")!.Value
+                );
 
-            var result = await _service.RateAsync(id, userId, dto.Stars);
+                var result =
+                    await _service.RateAsync(
+                        id,
+                        userId,
+                        dto.Stars
+                    );
 
-            if (!result)
-                return NotFound();
+                if (!result)
+                    return NotFound();
 
-            return Ok();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.ToString());
+            }
         }
     }
 }

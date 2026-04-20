@@ -67,19 +67,30 @@ namespace PizzaToPizza.Controllers
         [HttpGet("my")]
         public async Task<IActionResult> My()
         {
-            var claim = User.Claims.FirstOrDefault(x =>
-                x.Type == ClaimTypes.NameIdentifier ||
-                x.Type == "nameid" ||
-                x.Type == "sub");
-
-            if (claim == null)
-                return Unauthorized();
-
-            var userId = int.Parse(User.FindFirst("sub")!.Value);
+            var userId = int.Parse(
+                User.FindFirst("sub")!.Value
+            );
 
             var promos = await _service.GetMyAsync(userId);
 
-            return Ok(User.Claims.Select(x => new { x.Type, x.Value }));
+            return Ok(promos);
+        }
+
+        [Authorize]
+        [HttpPut("{id}/activate")]
+        public async Task<IActionResult> Activate(int id)
+        {
+            var userId = int.Parse(
+                User.FindFirst("sub")!.Value
+            );
+
+            var result =
+                await _service.ActivateAsync(id, userId);
+
+            if (!result)
+                return NotFound();
+
+            return Ok();
         }
     }
 }

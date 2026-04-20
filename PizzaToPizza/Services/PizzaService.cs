@@ -111,26 +111,32 @@ namespace PizzaToPizza.Services
             return true;
         }
 
-        public async Task<bool> RateAsync(int pizzaId, int userId, int stars)
+        public async Task<bool> RateAsync(
+        int pizzaId,
+        int userId,
+        int stars)
         {
-            var pizza = await _context.Pizzas.FindAsync(pizzaId);
+            var pizza =
+                await _context.Pizzas.FindAsync(pizzaId);
 
             if (pizza == null)
                 return false;
 
-            var existing = await _context.PizzaRatings
+            var existing =
+                await _context.PizzaRatings
                 .FirstOrDefaultAsync(x =>
                     x.PizzaId == pizzaId &&
                     x.UserId == userId);
 
             if (existing == null)
             {
-                _context.PizzaRatings.Add(new PizzaRating
-                {
-                    PizzaId = pizzaId,
-                    UserId = userId,
-                    Stars = stars
-                });
+                _context.PizzaRatings.Add(
+                    new PizzaRating
+                    {
+                        PizzaId = pizzaId,
+                        UserId = userId,
+                        Stars = stars
+                    });
             }
             else
             {
@@ -139,13 +145,20 @@ namespace PizzaToPizza.Services
 
             await _context.SaveChangesAsync();
 
-            var ratings = await _context.PizzaRatings
+            var ratings =
+                await _context.PizzaRatings
                 .Where(x => x.PizzaId == pizzaId)
                 .ToListAsync();
 
             pizza.RatingCount = ratings.Count;
+
             pizza.RatingAverage =
-    Math.Round(ratings.Average(x => x.Stars), 1);
+                ratings.Count == 0
+                ? 0
+                : (double)Math.Round(
+                    ratings.Average(x => x.Stars),
+                    1
+                );
 
             await _context.SaveChangesAsync();
 

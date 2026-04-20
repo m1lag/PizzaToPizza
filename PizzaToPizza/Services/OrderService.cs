@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PizzaToPizza.Data;
-using PizzaToPizza.Dtos;
+using PizzaToPizza.Dtos.Orders;
 using PizzaToPizza.Models;
 
 namespace PizzaToPizza.Services
@@ -14,72 +14,137 @@ namespace PizzaToPizza.Services
             _context = context;
         }
 
-        public async Task<List<Order>> GetAllAsync()
+        public async Task CreateAsync(int userId)
         {
-            return await _context.Orders
-                .Include(o => o.Pizzas)
-                .Include(o => o.User)
-                .ToListAsync();
-        }
-
-        public async Task<Order?> GetByIdAsync(int id)
-        {
-            return await _context.Orders
-                .Include(o => o.Pizzas)
-                .Include(o => o.User)
-                .FirstOrDefaultAsync(o => o.Id == id);
-        }
-
-        public async Task<List<Order>> GetByUserIdAsync(int userId)
-        {
-            return await _context.Orders
-                .Include(o => o.Pizzas)
-                .Include(o => o.User)
-                .Where(o => o.UserId == userId)
-                .ToListAsync();
-        }
-
-        public async Task<Order> CreateOrderAsync(int userId, CreateOrderDto dto)
-        {
-            var user = await _context.Users.FindAsync(userId);
-
-            if (user == null)
-                throw new Exception("User not found");
-
-            var pizzas = await _context.Pizzas
-                .Where(p => dto.PizzaIds.Contains(p.Id))
+            var cart = await _context.CartItems
+                .Include(x => x.Pizza)
+                .Where(x => x.UserId == userId)
                 .ToListAsync();
 
-            if (!pizzas.Any())
-                throw new Exception("No pizzas selected");
+            if (!cart.Any())
+                return;
 
-            var totalPrice = pizzas.Sum(p => p.Price);
+            var total = cart.Sum(x =>
+                x.Pizza.Price * x.Quantity);
 
             var order = new Order
             {
                 UserId = userId,
                 CreatedAt = DateTime.UtcNow,
-                TotalPrice = totalPrice,
-                Pizzas = pizzas
+                Total = total,
+                Status = "Pending"
             };
 
             _context.Orders.Add(order);
             await _context.SaveChangesAsync();
 
-            return order;
+            foreach (var item in cart)
+            {
+                _context.OrderItems.Add(new OrderItem
+                {
+                    OrderId = order.Id,
+                    PizzaId = item.PizzaId,
+                    Quantity = item.Quantity,
+                    Price = item.Pizza.Price
+                });
+            }
+
+            _context.CartItems.RemoveRange(cart);
+
+            var promo = await _context.PromoCodes
+            .FirstOrDefaultAsync(x =>
+                x.UserId == userId &&
+                !x.IsUsed &&
+                x.ExpiryDate > DateTime.UtcNow
+            );
+
+            
+
+            await _context.SaveChangesAsync();
+
+
         }
 
-        public async Task<bool> DeleteAsync(int id)
+        public async Task ApproveAsync(int id)
+        {
+            var order = await _context.Orders
+                .FirstOrDefaultAsync(x => x.Id == id);
+
+            if (order == null) return;
+
+            order.Status = "Approved";
+
+            var promo = await _context.PromoCodes
+                .FirstOrDefaultAsync(x =>
+                    x.UserId == order.UserId &&
+                    !x.IsUsed &&
+                    x.ExpiryDate > DateTime.UtcNow
+                );
+
+            if (promo != null)
+            {
+                promo.IsUsed = true;
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<List<OrderDto>> GetMyAsync(int userId)
+        {
+            return await _context.Orders
+                .Where(x => x.UserId == userId)
+                .Include(x => x.Items)
+                .ThenInclude(x => x.Pizza)
+                .OrderByDescending(x => x.Id)
+                .Select(x => new OrderDto
+                {
+                    Id = x.Id,
+                    Total = x.Total,
+                    Status = x.Status,
+                    CreatedAt = x.CreatedAt,
+                    Items = x.Items
+                        .Select(i =>
+                            i.Pizza.Name +
+                            " x" +
+                            i.Quantity)
+                        .ToList()
+                })
+                .ToListAsync();
+        }
+
+        public async Task<List<OrderDto>> GetAllAsync()
+        {
+            return await _context.Orders
+                .Include(x => x.User)
+                .Include(x => x.Items)
+                .ThenInclude(x => x.Pizza)
+                .OrderByDescending(x => x.Id)
+                .Select(x => new OrderDto
+                {
+                    Id = x.Id,
+                    UserName = x.User.FullName,
+                    Total = x.Total,
+                    Status = x.Status,
+                    CreatedAt = x.CreatedAt,
+                    Items = x.Items
+                        .Select(i =>
+                            i.Pizza.Name +
+                            " x" +
+                            i.Quantity)
+                        .ToList()
+                })
+                .ToListAsync();
+        }
+
+        public async Task RejectAsync(int id)
         {
             var order = await _context.Orders.FindAsync(id);
 
-            if (order == null)
-                return false;
+            if (order == null) return;
 
-            _context.Orders.Remove(order);
+            order.Status = "Rejected";
+
             await _context.SaveChangesAsync();
-
-            return true;
         }
     }
 }

@@ -1,18 +1,17 @@
-﻿using PizzaToPizza.Models;
-using PizzaToPizza.Dtos;
+﻿using PizzaToPizza.Dtos.Orders;
 
 namespace PizzaToPizza.Services
 {
     public interface IOrderService
     {
-        Task<Order> CreateOrderAsync(int userId, CreateOrderDto dto);
+        Task CreateAsync(int userId);
 
-        Task<List<Order>> GetAllAsync();
+        Task<List<OrderDto>> GetMyAsync(int userId);
 
-        Task<Order?> GetByIdAsync(int id);
+        Task<List<OrderDto>> GetAllAsync();
 
-        Task<List<Order>> GetByUserIdAsync(int userId);
+        Task ApproveAsync(int id);
 
-        Task<bool> DeleteAsync(int id);
+        Task RejectAsync(int id);
     }
 }
